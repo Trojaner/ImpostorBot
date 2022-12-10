@@ -37,7 +37,7 @@ export default class RnnTextPredictor {
     this.model = this.createModel();
     this.model.compile({
       loss: 'categoricalCrossentropy',
-      optimizer: 'adammax',
+      optimizer: 'adamax',
       metrics: ['accuracy'],
     });
 
@@ -136,7 +136,6 @@ export default class RnnTextPredictor {
         inputShape: [null, this.getVocabularySize()],
       })
     );
-    model.add(tf.layers.lstm({units: 16}));
     model.add(
       tf.layers.dense({units: this.getVocabularySize(), activation: 'softmax'})
     );
