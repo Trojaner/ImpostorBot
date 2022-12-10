@@ -1,11 +1,12 @@
-import * as tf from '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs-node';
+import {io as tfio} from '@tensorflow/tfjs';
 import natural from 'natural';
 
 export type TextMessage = string;
 
 export type ExportedModel = {
   modelTopology: any;
-  weightSpecs: tf.io.WeightsManifestEntry[];
+  weightSpecs: tfio.WeightsManifestEntry[];
   weightData: ArrayBuffer;
   tokenizedData: any;
 };
@@ -91,7 +92,7 @@ export default class RnnTextPredictor {
       );
     }
 
-    let modelArtifacts: tf.io.ModelArtifacts | null = null;
+    let modelArtifacts: tfio.ModelArtifacts | null = null;
     const modelTopologyType = 'JSON';
 
     const handler = tf.io.withSaveHandler(async artifacts => {
@@ -127,7 +128,14 @@ export default class RnnTextPredictor {
 
   private createModel() {
     const model = tf.sequential();
-    model.add(tf.layers.lstm({units: 32, returnSequences: true}));
+    model.add(
+      tf.layers.lstm({
+        units: 32,
+        returnSequences: true,
+        recurrentInitializer: 'glorotNormal',
+        inputShape: [null, this.getVocabularySize()],
+      })
+    );
     model.add(tf.layers.lstm({units: 16}));
     model.add(
       tf.layers.dense({units: this.getVocabularySize(), activation: 'softmax'})
