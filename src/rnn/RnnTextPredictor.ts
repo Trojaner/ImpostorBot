@@ -23,9 +23,10 @@ export default class RnnTextPredictor {
   }
 
   async train(data: TextMessage[]) {
-    this.tokenizedData = data.map(({content}) =>
-      this.tokenizer.tokenize(content)
-    );
+    this.tokenizedData = data
+      .map(message => message?.content)
+      .filter(content => content && content.trim() != '')
+      .map(content => this.tokenizer.tokenize(content));
 
     const encodedData = this.tokenizedData.map(sentence =>
       sentence.map(word => this.encodeWord(word))
@@ -42,6 +43,7 @@ export default class RnnTextPredictor {
       optimizer: 'adam',
       metrics: ['accuracy'],
     });
+
     await this.model.fit(inputTensor, outputTensor, {
       epochs: 100,
       batchSize: 64,

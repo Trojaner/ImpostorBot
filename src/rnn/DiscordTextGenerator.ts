@@ -6,7 +6,7 @@ import {
   Webhook,
   WebhookClient,
 } from 'discord.js';
-import {Op} from 'sequelize';
+import {Model, Op} from 'sequelize';
 import {DbMessages, DbModels} from '../Database';
 import ImpersonatorClient from '../ImpersonatorClient';
 import Messages from '../Messages';
@@ -131,13 +131,27 @@ async function predictText(
   const lastKnownMessageId =
     lastKnownMessage.getDataValue<Snowflake>('message_id');
 
+  let oldModel: Model | any = null;
+
   if (
     dbModel &&
     dbModel.getDataValue<Snowflake>('last_message_id') != lastKnownMessageId
   ) {
-    // need to retrain
-    await dbModel.destroy();
-    dbModel = null;
+    const count = await DbMessages.count({
+      where: {
+        guild_id: guildId || channel.guild.id,
+        user_id: userId || {[Op.ne]: null},
+        time: {
+          [Op.gt]: dbModel.getDataValue('update_time'),
+        },
+      },
+    });
+
+    if (count > 5000) {
+      // model is outdated, delete it
+      oldModel = dbModel;
+      dbModel = null;
+    }
   }
 
   let model: ExportedModel | null = null;
@@ -189,17 +203,18 @@ async function predictText(
     const message = await interaction?.followUp({
       embeds: [
         Messages.error().setDescription(
-          'User model is not trained. Training model now, this can take a while...'
+          'User model is not trained or outdated. Training model now, this can take a while...'
         ),
       ],
     });
 
     console.log(`Train started with ${messages.length} messages`);
-    rnn.train(messages);
+    await rnn.train(messages);
     console.log('Train finished, saving model...');
 
     const {modelTopology, weightSpecs, weightData, tokenizedData} =
       await rnn.export();
+
     await DbModels.create({
       guild_id: guildId || channel.guild.id,
       user_id: userId || null,
@@ -209,6 +224,10 @@ async function predictText(
       tokenized_data: JSON.stringify(tokenizedData),
       last_message_id: lastKnownMessageId,
     });
+
+    if (oldModel) {
+      await oldModel.destroy();
+    }
 
     console.log('Model saved to db');
     await message?.edit(
