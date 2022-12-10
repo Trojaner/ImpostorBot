@@ -171,7 +171,7 @@ async function predictText(
 
   const rnn = new RnnTextPredictor();
   if (model) {
-    rnn.import(model);
+    await rnn.import(model);
   } else {
     const entries = await DbMessages.findAll({
       where: {
@@ -218,11 +218,11 @@ async function predictText(
 
     console.log(`Train started with ${messages.length} messages`);
     await rnn.train(messages, {
-      onEpochBegin: async (epoch, logs) => {
+      onBatchBegin: async (batch, logs) => {
         await message?.edit({
           embeds: [
             Messages.error().setDescription(
-              `Training model... Epoch ${epoch} of ${logs.epochs}`
+              `Training model... Batch ${batch} of ${logs.batches}`
             ),
           ],
         });

@@ -45,10 +45,11 @@ export default class RnnTextPredictor {
       batchSize: 10,
       callbacks: {
         ...callbacks,
-        onEpochBegin: async (epoch, logs) => {
-          console.log(`Epoch ${epoch}: loss = ${logs?.loss || 'N/A'}`);
-          if (callbacks?.onEpochBegin) {
-            callbacks?.onEpochBegin(epoch, logs);
+        onBatchBegin: async (batch, logs) => {
+          console.log(`Batch ${batch}: loss = ${logs?.loss || 'N/A'}`);
+
+          if (callbacks?.onBatchBegin) {
+            callbacks?.onBatchBegin(batch, logs);
           }
         },
       },
@@ -117,7 +118,7 @@ export default class RnnTextPredictor {
     };
   }
 
-  async import(model: ExportedModel) {
+  async import(model: ExportedModel): Promise<void> {
     this.tokenizedData = model.tokenizedData;
 
     const modelIo = tf.io.fromMemory(model);
