@@ -37,13 +37,13 @@ export default class RnnTextPredictor {
     this.model = this.createModel();
     this.model.compile({
       loss: 'categoricalCrossentropy',
-      optimizer: 'adam',
+      optimizer: 'adammax',
       metrics: ['accuracy'],
     });
 
     await this.model.fit(inputTensor, outputTensor, {
-      epochs: 5,
-      batchSize: 10,
+      epochs: 3,
+      batchSize: 32,
       callbacks: {
         ...callbacks,
         onBatchBegin: async (batch, logs) => {
@@ -204,6 +204,6 @@ export default class RnnTextPredictor {
   }
 
   private getVocabularySize() {
-    return this.getVocabulary().length + 1;
+    return this.getVocabulary().length;
   }
 }
