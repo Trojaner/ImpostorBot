@@ -1,10 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
 import natural from 'natural';
 
-export type TextMessage = {
-  content: string;
-  time: Date;
-};
+export type TextMessage = string;
 
 export type ExportedModel = {
   modelTopology: any;
@@ -24,7 +21,6 @@ export default class RnnTextPredictor {
 
   async train(data: TextMessage[]) {
     this.tokenizedData = data
-      .map(message => message?.content)
       .filter(content => content && content.trim() != '')
       .map(content => this.tokenizer.tokenize(content));
 
