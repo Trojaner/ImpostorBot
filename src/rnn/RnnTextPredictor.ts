@@ -127,16 +127,6 @@ export default class RnnTextPredictor {
 
   private createModel() {
     const model = tf.sequential();
-    model.add(
-      tf.layers.bidirectional({
-        layer: tf.layers.lstm({
-          units: 64,
-          returnSequences: true,
-          recurrentInitializer: 'glorotNormal',
-        }),
-        mergeMode: 'concat',
-      })
-    );
     model.add(tf.layers.lstm({units: 32, returnSequences: true}));
     model.add(tf.layers.lstm({units: 16}));
     model.add(
