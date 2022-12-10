@@ -11,7 +11,7 @@ export type CommandArgs = {
 export class Command {
   disabled?: boolean;
 
-  private?: boolean;
+  ephermal?: boolean;
 
   builder!: SlashCommandBuilder;
 

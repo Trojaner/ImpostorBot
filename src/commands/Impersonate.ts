@@ -5,7 +5,7 @@ import {generateTextFromDiscordMessages} from '../rnn/DiscordTextGenerator';
 import Messages from '../Messages';
 
 export default new Command({
-  private: true,
+  ephermal: true,
 
   builder: new SlashCommandBuilder()
     .addUserOption(option =>
@@ -30,8 +30,6 @@ export default new Command({
     .setDescription('Impersonate a user'),
 
   run: async ({interaction, client}) => {
-    await interaction.deleteReply();
-
     const userId = interaction.options.get('user')!.value as string;
 
     const channelId = interaction.options.get('channel')!.value as string;
@@ -40,6 +38,7 @@ export default new Command({
     if (channel == null) {
       await interaction.followUp({
         embeds: [Messages.error().setDescription('Channel not found.')],
+        ephemeral: true,
       });
 
       return;
@@ -50,6 +49,7 @@ export default new Command({
         embeds: [
           Messages.error().setDescription('Channel is not a text channel.'),
         ],
+        ephemeral: true,
       });
 
       return;

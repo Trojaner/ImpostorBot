@@ -31,6 +31,7 @@ export async function generateTextFromDiscordMessages(
       embeds: [
         Messages.error().setDescription('Failed to generate a message.'),
       ],
+      ephemeral: true,
     });
 
     return;
@@ -57,6 +58,7 @@ export async function generateTextFromDiscordMessages(
           'Failed to send webhook. Please make sure I have the `Manage Webhooks` permission.'
         ),
       ],
+      ephemeral: true,
     });
 
     console.log(e);
@@ -122,6 +124,7 @@ async function predictText(
           'Failed to generate a message. No messages found for this user.'
         ),
       ],
+      ephemeral: true,
     });
 
     console.log('No last known message found');
@@ -194,6 +197,7 @@ async function predictText(
             'Failed to generate a message. No messages found for this user.'
           ),
         ],
+        ephemeral: true,
       });
 
       console.error('No messages found');
@@ -206,6 +210,7 @@ async function predictText(
           'User model is not trained or outdated. Training model now, this can take a while...'
         ),
       ],
+      ephemeral: true,
     });
 
     console.log(`Train started with ${messages.length} messages`);

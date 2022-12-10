@@ -33,7 +33,7 @@ export async function handleCommand(
 
   await interaction.deferReply({
     fetchReply: true,
-    ephemeral: command.private,
+    ephemeral: command.ephermal,
   });
 
   try {
@@ -46,9 +46,6 @@ export async function handleCommand(
     console.error(error);
 
     await interaction.editReply({
-      options: {
-        ephemeral: true,
-      },
       embeds: [
         messages
           .error()
