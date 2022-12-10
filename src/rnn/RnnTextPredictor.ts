@@ -19,7 +19,7 @@ export default class RnnTextPredictor {
     this.tokenizer = new natural.WordTokenizer();
   }
 
-  async train(data: TextMessage[]) {
+  async train(data: TextMessage[], callbacks?: any) {
     this.tokenizedData = data
       .filter(content => content && content.trim() != '')
       .map(content => this.tokenizer.tokenize(content));
@@ -41,8 +41,17 @@ export default class RnnTextPredictor {
     });
 
     await this.model.fit(inputTensor, outputTensor, {
-      epochs: 100,
-      batchSize: 64,
+      epochs: 5,
+      batchSize: 10,
+      callbacks: {
+        ...callbacks,
+        onEpochBegin: async (epoch, logs) => {
+          console.log(`Epoch ${epoch}: loss = ${logs?.loss || 'N/A'}`);
+          if (callbacks?.onEpochBegin) {
+            callbacks?.onEpochBegin(epoch, logs);
+          }
+        },
+      },
     });
   }
 

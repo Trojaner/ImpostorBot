@@ -7,6 +7,7 @@ import {
   WebhookClient,
 } from 'discord.js';
 import {Model, Op} from 'sequelize';
+import {setTimeout} from 'timers/promises';
 import {DbMessages, DbModels} from '../Database';
 import ImpersonatorClient from '../ImpersonatorClient';
 import Messages from '../Messages';
@@ -213,8 +214,21 @@ async function predictText(
       ephemeral: true,
     });
 
+    await setTimeout(1000);
+
     console.log(`Train started with ${messages.length} messages`);
-    await rnn.train(messages);
+    await rnn.train(messages, {
+      onEpochBegin: async (epoch, logs) => {
+        await message?.edit({
+          embeds: [
+            Messages.error().setDescription(
+              `Training model... Epoch ${epoch} of ${logs.epochs}`
+            ),
+          ],
+        });
+      },
+    });
+
     console.log('Train finished, saving model...');
 
     const {modelTopology, weightSpecs, weightData, tokenizedData} =
