@@ -1,0 +1,16 @@
+Write a typescript class called RnnTextPredictor that does very accurate text prediction using a BiRNN with Tensorflow.js for Node.js and natural. 
+
+First define a type called TextMessage. The TextMessage type contains two properties: content and time. 
+
+The class should have the following functions:
+- A function that trains the model using data from a TextMessage array
+- A function that predicts the remainder of a given input message text
+- A function that predicts a related message to a given input message text
+- A function that generates a random text from the trained data as string array.
+- A function that exports and returns the model in a way that can be imported again
+- A function that imports a model that was exported using the generated export function
+
+Only print code using markdown codeblocks. 
+Include imports in the printed code. 
+Do not explain anything outside the code.
+Do not create stub functions with only comments or nothing inside them.

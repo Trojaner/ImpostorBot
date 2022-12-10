@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "program": "${workspaceRoot}/src/index.ts",
+            "outFiles": [
+                "${workspaceRoot}/build/index.js"
+            ],
+            "sourceMaps": true
+        }
+    ]
+}
