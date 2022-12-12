@@ -76,15 +76,13 @@ export default class RnnTextPredictor {
     return randomText;
   }
 
-  padSequences(sequences, options) {
-    const maxlen = options.maxlen;
-
+  padSequences(sequences: string[], {maxlen}) {
     const paddedData = sequences.map(sequence => {
       // If the length of the sequence is less than the maximum length,
       // pad the sequence with 0s to make it the same length as the maximum length.
       if (sequence.length < maxlen) {
-        const padding = new Array(maxlen - sequence.length).fill(0);
-        return sequence.concat(padding);
+        const padding = new Array(maxlen - sequence.length).fill(' ');
+        return sequence.concat(padding.join(''));
       }
       // If the length of the sequence is equal to or greater than the maximum length,
       // truncate the sequence to the maximum length.
