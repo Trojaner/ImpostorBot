@@ -34,7 +34,7 @@ export default class RnnTextPredictor {
         tf.layers.bidirectional({
           layer: tf.layers.lstm({units: 128}),
           mergeMode: 'concat',
-          inputShape: [encodedData.input.length],
+          inputShape: [encodedData.length],
         }),
         tf.layers.dense({units: 128, activation: 'relu'}),
         tf.layers.dense({units: 1, activation: 'sigmoid'}),
