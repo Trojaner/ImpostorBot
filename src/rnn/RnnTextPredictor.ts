@@ -14,10 +14,15 @@ export default class RnnTextPredictor {
   private model: tf.LayersModel | null = null;
 
   async train(data: TextMessage[]) {
-    const tokenizer = new tf_tokenizer.Tokenizer();
+    const tokenizer = new tf_tokenizer.Tokenizer({
+      num_words: 5,
+      oov_token: '<unk>',
+    });
     tokenizer.fitOnTexts(data);
-    const encodedData = tokenizer.textsToSequences(data);
-    const paddedData = tf_tokenizer.padSequences(encodedData, {maxlen: 50});
+    const encodedData = tokenizer.textsToSequences(
+      data.map(x => `<start> ${x} <end>`)
+    );
+    const paddedData = this.padSequences(encodedData, {maxlen: 255});
     const inputs = tf.tensor2d(paddedData, [
       paddedData.length,
       paddedData[0].length,
@@ -50,7 +55,7 @@ export default class RnnTextPredictor {
 
     const tokenizer = new tf_tokenizer.Tokenizer();
     const encodedInput = tokenizer.textsToSequences(input);
-    const paddedInput = tf_tokenizer.padSequences(encodedInput, {maxlen: 50});
+    const paddedInput = this.padSequences(encodedInput, {maxlen: 255});
     const inputTensor = tf.tensor2d(paddedInput, [
       paddedInput.length,
       paddedInput[0].length,
@@ -69,6 +74,24 @@ export default class RnnTextPredictor {
     const prediction = this.model.predict(tf.randomNormal([1, 50]));
     const randomText = tokenizer.sequencesToTexts(prediction);
     return randomText;
+  }
+
+  padSequences(sequences, options) {
+    const maxlen = options.maxlen;
+
+    const paddedData = sequences.map(sequence => {
+      // If the length of the sequence is less than the maximum length,
+      // pad the sequence with 0s to make it the same length as the maximum length.
+      if (sequence.length < maxlen) {
+        const padding = new Array(maxlen - sequence.length).fill(0);
+        return sequence.concat(padding);
+      }
+      // If the length of the sequence is equal to or greater than the maximum length,
+      // truncate the sequence to the maximum length.
+      return sequence.slice(0, maxlen);
+    });
+
+    return paddedData;
   }
 
   async export(): Promise<ExportedModel> {
