@@ -19,17 +19,20 @@ export default class RnnTextPredictor {
       oov_token: '<unk>',
     });
     tokenizer.fitOnTexts(data);
+
     const encodedData = tokenizer.textsToSequences(
-      data.map(x => `<start> ${x} <end>`)
+      data.filter(x => x && x.trim() != '')
     );
-    const paddedData = this.padSequences(encodedData, {maxlen: 255});
 
-    console.log('paddedData: ', paddedData);
+    console.log('encodedData: ', encodedData.slice(1, 5));
 
-    const inputs = tf.tensor2d(paddedData, [
-      paddedData.length,
-      paddedData[0].length,
-    ]);
+    const padLength = 512;
+    const paddedData = this.padSequences(encodedData, {maxlen: padLength});
+
+    console.log('paddedData: ', paddedData.slice(1, 5));
+
+    const inputs = tf.tensor2d(paddedData, [paddedData.length, padLength]);
+
     const labels = tf.ones([paddedData.length, 1]);
 
     this.model = tf.sequential({
@@ -37,7 +40,7 @@ export default class RnnTextPredictor {
         tf.layers.bidirectional({
           layer: tf.layers.lstm({units: 128}),
           mergeMode: 'concat',
-          inputShape: [paddedData[0].length, tokenizer.word_counts.length],
+          inputShape: [padLength, tokenizer.word_counts.length],
         }),
         tf.layers.dense({units: 128, activation: 'relu'}),
         tf.layers.dense({units: 1, activation: 'sigmoid'}),
