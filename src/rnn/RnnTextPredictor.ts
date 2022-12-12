@@ -14,15 +14,17 @@ export default class RnnTextPredictor {
   private model: tf.LayersModel | null = null;
 
   async train(data: TextMessage[]) {
-    this.model = tf.sequential();
-    const biRNN = tf.layers.bidirectional({
-      layer: tf.layers.lstm({units: 128}),
-      mergeMode: 'concat',
+    this.model = tf.sequential({
+      layers: [
+        tf.layers.bidirectional({
+          layer: tf.layers.lstm({units: 128}),
+          mergeMode: 'concat',
+        }),
+        tf.layers.dense({units: 128, activation: 'relu'}),
+        tf.layers.dense({units: 1, activation: 'sigmoid'}),
+      ],
     });
 
-    this.model.layers.push(biRNN);
-    this.model.layers.push(tf.layers.dense({units: 128, activation: 'relu'}));
-    this.model.layers.push(tf.layers.dense({units: 1, activation: 'sigmoid'}));
     this.model.compile({
       optimizer: tf.train.adamax(),
       loss: 'binaryCrossentropy',
