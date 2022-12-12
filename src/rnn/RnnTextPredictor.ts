@@ -41,7 +41,7 @@ export default class RnnTextPredictor {
     await this.model.fit(inputs, labels, {epochs: 5, batchSize: 32});
   }
 
-  async predictRemainder(input: TextMessage) {
+  predictRemainder(input: TextMessage) {
     if (!this.model) throw new Error('Model not trained yet.');
 
     const tokenizer = new tf_tokenizer.Tokenizer();
@@ -102,6 +102,8 @@ export default class RnnTextPredictor {
   }
 
   dispose() {
-    this.model?.dispose();
+    if (this?.model?.built) {
+      this.model?.dispose();
+    }
   }
 }
