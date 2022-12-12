@@ -14,11 +14,22 @@ export default class RnnTextPredictor {
   private model: tf.LayersModel | null = null;
 
   async train(data: TextMessage[]) {
+    const tokenizer = new tf_tokenizer.Tokenizer();
+    tokenizer.fitOnTexts(data);
+    const encodedData = tokenizer.textsToSequences(data);
+    const paddedData = tf_tokenizer.padSequences(encodedData, {maxlen: 50});
+    const inputs = tf.tensor2d(paddedData, [
+      paddedData.length,
+      paddedData[0].length,
+    ]);
+    const labels = tf.ones([paddedData.length, 1]);
+
     this.model = tf.sequential({
       layers: [
         tf.layers.bidirectional({
           layer: tf.layers.lstm({units: 128}),
           mergeMode: 'concat',
+          inputShape: [encodedData.input.length],
         }),
         tf.layers.dense({units: 128, activation: 'relu'}),
         tf.layers.dense({units: 1, activation: 'sigmoid'}),
@@ -31,15 +42,6 @@ export default class RnnTextPredictor {
       metrics: ['accuracy'],
     });
 
-    const tokenizer = new tf_tokenizer.Tokenizer();
-    tokenizer.fitOnTexts(data);
-    const encodedData = tokenizer.textsToSequences(data);
-    const paddedData = tf_tokenizer.padSequences(encodedData, {maxlen: 50});
-    const inputs = tf.tensor2d(paddedData, [
-      paddedData.length,
-      paddedData[0].length,
-    ]);
-    const labels = tf.ones([paddedData.length, 1]);
     await this.model.fit(inputs, labels, {epochs: 5, batchSize: 32});
   }
 
