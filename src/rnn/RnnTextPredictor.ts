@@ -28,15 +28,10 @@ export default class RnnTextPredictor {
     const padLength = 512;
     const paddedData = this.padSequences(encodedData, {maxlen: padLength});
 
-    const inputTensor = tf.tensor3d(paddedData, [
+    const inputTensor = tf.tensor2d(paddedData, [paddedData.length, padLength]);
+    const targetTensor = tf.tensor2d(paddedData, [
       paddedData.length,
       padLength,
-      1,
-    ]);
-    const targetTensor = tf.tensor3d(paddedData, [
-      paddedData.length,
-      padLength,
-      1,
     ]);
 
     this.model = tf.sequential({
