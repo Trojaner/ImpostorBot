@@ -15,21 +15,18 @@ export default class RnnTextPredictor {
 
   async train(data: TextMessage[]) {
     const tokenizer = new tf_tokenizer.Tokenizer({
-      num_words: 5,
       oov_token: '<unk>',
+      lower: false,
     });
+
     tokenizer.fitOnTexts(data);
 
     const encodedData = tokenizer.textsToSequences(
       data.filter(x => x && x.trim() != '')
     );
 
-    console.log('encodedData: ', encodedData.slice(1, 5));
-
     const padLength = 512;
     const paddedData = this.padSequences(encodedData, {maxlen: padLength});
-
-    console.log('paddedData: ', paddedData.slice(1, 5));
 
     const inputs = tf.tensor2d(paddedData, [paddedData.length, padLength]);
 
