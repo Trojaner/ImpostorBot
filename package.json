@@ -19,10 +19,10 @@
     "@tensorflow/tfjs-node": "^4.1.0",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
-    "natural": "^5.2.4",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
     "require-all": "^3.0.0",
-    "sequelize": "^6.26.0"
+    "sequelize": "^6.26.0",
+    "tf_node_tokenizer": "^1.0.3"
   }
 }
