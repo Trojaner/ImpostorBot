@@ -23,6 +23,9 @@ export default class RnnTextPredictor {
       data.map(x => `<start> ${x} <end>`)
     );
     const paddedData = this.padSequences(encodedData, {maxlen: 255});
+
+    console.log('paddedData: ', paddedData);
+
     const inputs = tf.tensor2d(paddedData, [
       paddedData.length,
       paddedData[0].length,
