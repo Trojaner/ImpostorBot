@@ -28,9 +28,16 @@ export default class RnnTextPredictor {
     const padLength = 512;
     const paddedData = this.padSequences(encodedData, {maxlen: padLength});
 
-    const inputs = tf.tensor2d(paddedData, [paddedData.length, 1]);
-
-    const labels = tf.ones([paddedData.length, 1]);
+    const inputTensor = tf.tensor3d(paddedData, [
+      paddedData.length,
+      padLength,
+      1,
+    ]);
+    const targetTensor = tf.tensor3d(paddedData, [
+      paddedData.length,
+      padLength,
+      1,
+    ]);
 
     this.model = tf.sequential({
       layers: [
@@ -46,11 +53,11 @@ export default class RnnTextPredictor {
 
     this.model.compile({
       optimizer: tf.train.adamax(),
-      loss: 'binaryCrossentropy',
+      loss: 'categoricalCrossentropy',
       metrics: ['accuracy'],
     });
 
-    await this.model.fit(inputs, labels, {epochs: 5, batchSize: 32});
+    await this.model.fit(inputTensor, targetTensor, {epochs: 5, batchSize: 32});
   }
 
   predictRemainder(input: TextMessage) {
