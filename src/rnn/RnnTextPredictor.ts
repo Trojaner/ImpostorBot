@@ -28,7 +28,7 @@ export default class RnnTextPredictor {
     const padLength = 512;
     const paddedData = this.padSequences(encodedData, {maxlen: padLength});
 
-    const inputs = tf.tensor2d(paddedData, [paddedData.length, padLength]);
+    const inputs = tf.tensor2d(paddedData, [paddedData.length, 1]);
 
     const labels = tf.ones([paddedData.length, 1]);
 
