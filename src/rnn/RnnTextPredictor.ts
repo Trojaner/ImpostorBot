@@ -93,7 +93,7 @@ export default class RnnTextPredictor {
     let xsTensor = tf.tensor2d(xs, [1, this.tokenizedData.vocabulary.length]);
 
     let result = '';
-    let y: tf.Tensor;
+    let y: tf.Tensor | null = null;
     while (result.slice(-text.length) !== text) {
       y = this.model.predict(xsTensor) as tf.Tensor;
       const index = y.argMax(-1).dataSync()[0];
@@ -101,6 +101,9 @@ export default class RnnTextPredictor {
       xsTensor.dispose();
       xsTensor = y.expandDims(0);
     }
+
+    xsTensor.dispose();
+    y?.dispose();
 
     return result.slice(text.length);
   }
