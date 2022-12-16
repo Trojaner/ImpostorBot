@@ -12,6 +12,7 @@ export type TokenizedData = {
   vocabulary: string[];
   wordToIndex: {[word: string]: number};
   indexToWord: {[index: number]: string};
+  padSize: number;
 };
 
 export default class RnnTextPredictor {
@@ -50,10 +51,13 @@ export default class RnnTextPredictor {
       {}
     );
 
+    const padSize = Math.max(...data.map(str => str.split(' ').length));
+
     this.tokenizedData = {
       vocabulary,
       wordToIndex,
       indexToWord,
+      padSize,
     };
 
     // Convert data to one-hot encoded tensors
@@ -161,9 +165,10 @@ export default class RnnTextPredictor {
 
     return this.pad(str.split(' ')).map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
-      if (!wordIndex) return [];
 
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
+      if (!wordIndex) return x;
+
       x[wordIndex] = 1;
       return x;
     });
@@ -174,9 +179,9 @@ export default class RnnTextPredictor {
 
     return this.pad(str.split(' ').slice(1)).map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
-      if (!wordIndex) return [];
-
       const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
+      if (!wordIndex) return y;
+
       y[wordIndex] = 1;
       return y;
     });
@@ -185,9 +190,11 @@ export default class RnnTextPredictor {
   private pad(str: string[]): string[] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    const length = Math.max(
-      ...this.tokenizedData?.vocabulary.map(s => s.split(' ').length)
-    );
+    const length = this.tokenizedData.padSize;
+
+    if (str.length > length) {
+      return str.slice(0, length);
+    }
 
     while (str.length < length) {
       str.push('');
