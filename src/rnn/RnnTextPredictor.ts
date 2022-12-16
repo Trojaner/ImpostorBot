@@ -67,15 +67,11 @@ export default class RnnTextPredictor {
     };
 
     // Convert data to one-hot encoded tensors
-    const xs = data.map(str => this.strToXs(str));
-    const ys = data.map(str => this.strToYs(str));
+    const xs = this.strToXs(data.join(' \n'));
+    const ys = this.strToYs(data.join(' \n'));
 
     const xsTensor = tf.stack(xs);
-    let ysTensor = tf.stack(ys);
-    ysTensor = ysTensor.reshape([
-      maxWordCount - 1,
-      this.tokenizedData.vocabulary.length,
-    ]);
+    const ysTensor = tf.stack(ys);
 
     // Build model
     const inputShape = [maxWordCount, this.tokenizedData.vocabulary.length];
