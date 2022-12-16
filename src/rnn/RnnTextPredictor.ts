@@ -71,8 +71,8 @@ export default class RnnTextPredictor {
     const ys = data.map(str => this.strToYs(str));
 
     const xsTensor = tf.stack(xs);
-    const ysTensor = tf.stack(ys);
-    ysTensor.reshape([-1, maxVocubularySize]);
+    let ysTensor = tf.stack(ys);
+    ysTensor = ysTensor.reshape([-1, this.tokenizedData.vocabulary.length]);
 
     // Build model
     const inputShape = [maxWordCount, this.tokenizedData.vocabulary.length];
