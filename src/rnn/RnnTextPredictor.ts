@@ -11,8 +11,8 @@ export type ExportedModel = {
 
 export type TokenizedData = {
   vocabulary: Set<string>;
-  charToIndex: {[word: string]: number};
-  indexToChar: {[index: number]: string};
+  wordToIndex: {[word: string]: number};
+  indexToWord: {[index: number]: string};
 };
 
 export default class RnnTextPredictor {
@@ -120,43 +120,40 @@ export default class RnnTextPredictor {
       inputText += ' ';
     }
 
-    const inputSequence = this.preprocessInput(inputText);
-    const oneHotInput = this.oneHotEncode([inputSequence])[0];
-    let inputTensor = tf.tensor3d(oneHotInput, [
+    const words = inputText.split(' ');
+    let oneHotInputs = this.oneHotEncode([inputText]);
+    let inputTensor = tf.tensor3d(oneHotInputs, [
       1,
-      inputSequence.length,
-      this.tokenizedData.vocabulary.size,
+      oneHotInputs[0].length,
+      this.tokenizedData!.vocabulary.size,
     ]);
 
-    const predictLength = Math.floor(
-      Math.random() * (predictLengthMax - predictLengthMin) + predictLengthMin
-    );
+    let prediction = '';
+    let predictLength = predictLengthMin;
 
-    let predictedText = inputText;
-    for (let i = 0; i < predictLength - inputText.length; i++) {
-      const prediction = this.model.predict(inputTensor) as Tensor;
-      const index = this.sampleFromPrediction(
-        tf.squeeze(prediction),
-        temperature
-      );
-      const char = this.tokenizedData.indexToChar[index];
-      if (char == '\n' && predictedText.length >= predictLengthMin) {
-        continue;
-      }
+    while (prediction.split(' ').length < predictLengthMax) {
+      const output = this.model.predict(inputTensor) as tf.Tensor<Rank.R3>;
+      const logits = output.mul(tf.scalar(temperature)).softmax().flatten();
+      const index = tf.multinomial(logits, 1).flatten().dataSync()[0];
+      const word = this.tokenizedData!.indexToWord[index];
 
-      predictedText += char;
-      inputSequence.push(index);
+      prediction += `${word} `;
+      words.shift();
+      words.push(word);
+
+      oneHotInputs = this.oneHotEncode([words.join(' ')]);
       inputTensor.dispose();
-
-      inputTensor = tf.tensor3d(this.oneHotEncode([inputSequence])[0], [
+      inputTensor = tf.tensor3d(oneHotInputs, [
         1,
-        inputSequence.length,
-        this.tokenizedData.vocabulary.size,
+        oneHotInputs[0].length,
+        this.tokenizedData!.vocabulary.size,
       ]);
+
+      predictLength++;
     }
 
     inputTensor?.dispose();
-    return predictedText;
+    return words.join(' ');
   }
 
   generateRandom(
@@ -171,71 +168,80 @@ export default class RnnTextPredictor {
   }
 
   private buildVocabulary(text: string, maxVocabSize: number) {
-    this.tokenizedData = {
-      vocabulary: new Set<string>(),
-      charToIndex: {},
-      indexToChar: {},
-    };
+    const vocabulary = new Set<string>();
+    const wordToIndex: {[key: string]: number} = {};
+    const indexToWord: {[key: number]: string} = {};
 
-    const charCounts: {[key: string]: number} = {};
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      if (charCounts[char]) {
-        charCounts[char]++;
+    const words = text.split(' ');
+    const wordCount = new Map<string, number>();
+    for (const word of words) {
+      if (wordCount.has(word)) {
+        wordCount.set(word, wordCount.get(word)! + 1);
       } else {
-        charCounts[char] = 1;
+        wordCount.set(word, 1);
       }
     }
 
-    const sortedCharCounts = Object.entries(charCounts).sort(
+    const sortedWordCount = Array.from(wordCount.entries()).sort(
       (a, b) => b[1] - a[1]
     );
 
-    for (let i = 0; i < Math.max(sortedCharCounts.length, maxVocabSize); i++) {
-      const char = sortedCharCounts[i][0];
-      this.tokenizedData.vocabulary.add(char);
-      this.tokenizedData.charToIndex[char] = i;
-      this.tokenizedData.indexToChar[i] = char;
+    for (let i = 0; i < maxVocabSize; i++) {
+      const word = sortedWordCount[i][0];
+      vocabulary.add(word);
+      wordToIndex[word] = i;
+      indexToWord[i] = word;
     }
+
+    this.tokenizedData = {
+      vocabulary,
+      wordToIndex,
+      indexToWord,
+    };
   }
 
-  private processData(text: string) {
-    if (!this.tokenizedData) throw new Error('Tokenized data not found.');
+  processData(text: string) {
+    const words = text.split(' ');
+    const sequenceLength = 20;
+    const inputSequences: string[] = [];
+    const targetSequences: string[] = [];
 
-    const inputSequences: number[][] = [];
-    const targetSequences: number[][] = [];
+    for (let i = 0; i < words.length - sequenceLength; i++) {
+      const inputSequence = words.slice(i, i + sequenceLength).join(' ');
+      const targetSequence = words[i + sequenceLength];
 
-    const sequenceLength = 100;
-    for (let i = 0; i < text.length - sequenceLength; i++) {
-      const inputSequence = text.substring(i, i + sequenceLength);
-      const targetChar = text[i + sequenceLength];
-
-      inputSequences.push(this.preprocessInput(inputSequence));
-      targetSequences.push([this.tokenizedData.charToIndex[targetChar]]);
+      inputSequences.push(inputSequence);
+      targetSequences.push(targetSequence);
     }
 
-    return {
-      inputSequences,
-      targetSequences,
-    };
+    return {inputSequences, targetSequences};
   }
 
   private preprocessInput(input: string) {
     if (!this.tokenizedData) throw new Error('Tokenized data not found.');
 
-    return input.split('').map(char => this.tokenizedData!.charToIndex[char]);
+    return input
+      .split(' ')
+      .map(char => this.tokenizedData!.wordToIndex[char] || '');
   }
+  oneHotEncode(sequences: string[]): number[][][] {
+    const oneHotEncodedSequences: number[][][] = [];
 
-  private oneHotEncode(sequences: number[][]) {
-    if (!this.tokenizedData) throw new Error('Tokenized data not found.');
+    for (const sequence of sequences) {
+      const oneHotEncodedSequence: number[][] = [];
 
-    return sequences.map(sequence => {
-      return sequence.map(index => {
-        const oneHot = Array(this.tokenizedData!.vocabulary.size).fill(0);
-        oneHot[index] = 1;
-        return oneHot;
-      });
-    });
+      for (const word of sequence.split(' ')) {
+        const oneHotEncodedWord = Array<number>(
+          this.tokenizedData!.vocabulary.size
+        ).fill(0);
+        oneHotEncodedWord[this.tokenizedData!.wordToIndex[word]] = 1;
+        oneHotEncodedSequence.push(oneHotEncodedWord);
+      }
+
+      oneHotEncodedSequences.push(oneHotEncodedSequence);
+    }
+
+    return oneHotEncodedSequences;
   }
 
   private sampleFromPrediction(prediction: Tensor, temperature: number) {
