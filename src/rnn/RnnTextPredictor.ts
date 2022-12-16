@@ -10,8 +10,8 @@ export type ExportedModel = {
 
 export type TokenizedData = {
   vocabulary: string[];
-  charToIndex: {[char: string]: number};
-  indexToChar: {[index: number]: string};
+  wordToIndex: {[word: string]: number};
+  indexToWord: {[index: number]: string};
 };
 
 export default class RnnTextPredictor {
@@ -22,21 +22,20 @@ export default class RnnTextPredictor {
 
   async train(data: string[]) {
     // Preprocess data
-    const vocabulary = [...new Set(data.map(x => x + '\n').join(''))];
-    const charToIndex = vocabulary.reduce(
-      (obj, char, i) => ({...obj, [char]: i}),
+    const vocabulary = [...new Set(data)];
+    const wordToIndex = vocabulary.reduce(
+      (obj, word, i) => ({...obj, [word]: i}),
       {}
     );
-
-    const indexToChar = vocabulary.reduce(
-      (obj, char, i) => ({...obj, [i]: char}),
+    const indexToWord = vocabulary.reduce(
+      (obj, word, i) => ({...obj, [i]: word}),
       {}
     );
 
     this.tokenizedData = {
       vocabulary,
-      charToIndex,
-      indexToChar,
+      wordToIndex,
+      indexToWord,
     };
 
     // Convert data to one-hot encoded tensors
@@ -60,7 +59,7 @@ export default class RnnTextPredictor {
     this.model.compile({loss: 'categoricalCrossentropy', optimizer: 'adamax'});
 
     // Train model
-    await this.model.fit(xsTensor, ysTensor, {epochs: 10});
+    await this.model.fit(xsTensor, ysTensor, {epochs: 5});
   }
 
   predictRemainder(text: string): string {
@@ -75,7 +74,7 @@ export default class RnnTextPredictor {
     while (result.slice(-text.length) !== text) {
       y = this.model.predict(xsTensor) as tf.Tensor;
       const index = y.argMax(-1).dataSync()[0];
-      result += this.tokenizedData.indexToChar[index];
+      result += this.tokenizedData.indexToWord[index] + ' ';
       xsTensor.dispose();
       xsTensor = y.expandDims(0);
     }
@@ -83,47 +82,16 @@ export default class RnnTextPredictor {
     return result.slice(text.length);
   }
 
-  predictRelated(text: string): string {
-    if (!this.model?.built || !this.tokenizedData)
-      throw new Error('Model not trained yet.');
-
-    const xs = this.strToXs(text);
-    const xsTensor = tf.tensor2d(xs, [1, this.tokenizedData.vocabulary.length]);
-
-    let result = '';
-    let y: tf.Tensor;
-    while (result.length < text.length) {
-      y = this.model.predict(xsTensor) as tf.Tensor;
-      const index = y.argMax(-1).dataSync()[0];
-      result += this.tokenizedData.indexToChar[index];
-      xsTensor.dispose();
-    }
-
-    return result;
-  }
-
   generateRandom(): string {
     if (!this.model?.built || !this.tokenizedData)
       throw new Error('Model not trained yet.');
 
-    let result = '';
-    let xsTensor = tf.tensor2d(this.strToXs(this.tokenizedData.vocabulary[0]), [
-      1,
-      this.tokenizedData.vocabulary.length,
-    ]);
+    const randomWord =
+      this.tokenizedData.vocabulary[
+        Math.floor(Math.random() * this.tokenizedData.vocabulary.length)
+      ];
 
-    let y: tf.Tensor;
-    while (true) {
-      y = this.model.predict(xsTensor) as tf.Tensor;
-      const index = y.argMax(-1).dataSync()[0];
-      const char = this.tokenizedData.indexToChar[index];
-      if (char === '\n') break;
-      result += char;
-      xsTensor.dispose();
-      xsTensor = y.expandDims(0);
-    }
-
-    return result;
+    return this.predictRemainder(randomWord);
   }
 
   async export(): Promise<ExportedModel> {
@@ -170,24 +138,24 @@ export default class RnnTextPredictor {
   }
 
   private strToXs(str: string): number[][] {
-    if (!this.tokenizedData) throw new Error('Tokenized data not available.');
+    if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return str.split('').map(char => {
+    return str.split(' ').map(word => {
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
-      x[this.tokenizedData!.charToIndex[char]] = 1;
+      x[this.tokenizedData!.wordToIndex[word]] = 1;
       return x;
     });
   }
 
   private strToYs(str: string): number[][] {
-    if (!this.tokenizedData) throw new Error('Tokenized data not available.');
+    if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return str
+      .split(' ')
       .slice(1)
-      .split('')
-      .map(char => {
+      .map(word => {
         const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
-        y[this.tokenizedData!.charToIndex[char]] = 1;
+        y[this.tokenizedData!.wordToIndex[word]] = 1;
         return y;
       });
   }
