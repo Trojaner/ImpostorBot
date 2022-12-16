@@ -99,13 +99,16 @@ export default class RnnTextPredictor {
 
   predictRemainder(
     inputText: string,
-    numChars: number,
+    predictLengthMin: number = 10,
+    predictLengthMax: number = 2000,
     temperature: number = 0.7
   ) {
     if (!this.model || !this.tokenizedData)
       throw new Error('Model not trained or imported yet.');
 
-    inputText += ' ';
+    if (inputText != '' && !inputText.endsWith(' ')) {
+      inputText += ' ';
+    }
 
     const inputSequence = this.preprocessInput(inputText);
     const oneHotInput = this.oneHotEncode([inputSequence])[0];
@@ -115,14 +118,22 @@ export default class RnnTextPredictor {
       this.tokenizedData.vocabulary.size,
     ]);
 
+    const predictLength = Math.floor(
+      Math.random() * (predictLengthMax - predictLengthMin) + predictLengthMin
+    );
+
     let predictedText = inputText;
-    for (let i = 0; i < numChars - inputText.length; i++) {
+    for (let i = 0; i < predictLength - inputText.length; i++) {
       const prediction = this.model.predict(inputTensor) as Tensor;
       const index = this.sampleFromPrediction(
         tf.squeeze(prediction),
         temperature
       );
       const char = this.tokenizedData.indexToChar[index];
+      if (char == '\n' && predictedText.length >= predictLengthMin) {
+        continue;
+      }
+
       predictedText += char;
       inputSequence.push(index);
       inputTensor.dispose();
@@ -138,11 +149,15 @@ export default class RnnTextPredictor {
     return predictedText;
   }
 
-  generateRandom(length: number = 2000) {
+  generateRandom(
+    minLength: number = 10,
+    maxLength: number = 2000,
+    temperature: number = 0.7
+  ) {
     if (!this.model || !this.tokenizedData)
       throw new Error('Model not trained or imported yet.');
 
-    return this.predictRemainder('', length);
+    return this.predictRemainder('', minLength, maxLength, temperature);
   }
 
   private buildVocabulary(text: string) {
