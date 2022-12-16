@@ -66,19 +66,12 @@ export default class RnnTextPredictor {
       maxWordCount,
     };
 
-    console.log(
-      `data.length: ${data.length}, vocabulary.length: ${vocabulary.length}, padSize: ${padSize}`
-    );
-
     // Convert data to one-hot encoded tensors
     const xs = data.map(str => this.strToXs(str));
     const ys = data.map(str => this.strToYs(str));
 
-    console.log(`Stacking; xs: ${xs.length}, ys: ${ys.length}`);
     const xsTensor = tf.stack(xs);
     const ysTensor = tf.stack(ys);
-
-    console.log('Building model');
 
     // Build model
     const inputShape = [1, this.tokenizedData.vocabulary.length];
@@ -93,12 +86,9 @@ export default class RnnTextPredictor {
       ],
     });
 
-    console.log('Compiling model');
     this.model.compile({loss: 'categoricalCrossentropy', optimizer: 'adamax'});
 
     // Train model
-
-    console.log('Training model');
     await this.model.fit(xsTensor, ysTensor, {
       epochs,
       callbacks: {
@@ -225,9 +215,6 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     const length = this.tokenizedData.maxWordCount;
-    console.log(
-      'Padding string with length ' + str.length + ' to length: ' + length
-    );
 
     if (str.length >= length) {
       return str.slice(0, length);
