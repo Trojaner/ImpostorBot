@@ -1,10 +1,8 @@
 Write a typescript class called RnnTextPredictor that does text prediction using a RNN with Tensorflow.js for Node.js. 
-The text predictor will be trained with chat messages.
 
 The RnnTextPredictor class should have at least the following functions:
-- train: trains the model using data from a string array. It should train as fast as possible.
+- train: trains the model using data from a string text. It should train as fast as possible.
 - predictRemainder: predicts the remainder of a given input message text
-- predictRelated: predicts a related message to a given input message text
 - generateRandom: generates a random text from the trained data as string array.
 - export: exports and returns the model in a way that can be imported again
 - import: imports a model that was exported using the generated export function
