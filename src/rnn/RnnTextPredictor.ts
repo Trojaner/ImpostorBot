@@ -22,10 +22,13 @@ export default class RnnTextPredictor {
   constructor() {}
 
   async train(data: string[]) {
+    const maxMessages = 5000;
     const maxVocubularySize = 1024;
+    const batchSize = 8;
+    const epochs = 5;
 
     // Preprocess data
-    data = data.sort(() => Math.random() - 0.5).slice(0, 5000);
+    data = data.sort(() => Math.random() - 0.5).slice(0, maxMessages);
 
     const wordCounts: {[word: string]: number} = {};
     data.forEach(str => {
@@ -60,29 +63,50 @@ export default class RnnTextPredictor {
       padSize,
     };
 
+    console.log(
+      `data.length: ${data.length}, vocabulary.length: ${vocabulary.length}, padSize: ${padSize}`
+    );
+
     // Convert data to one-hot encoded tensors
     const xs = data.map(str => this.strToXs(str));
     const ys = data.map(str => this.strToYs(str));
+
+    console.log(`Stacking; xs: ${xs.length}, ys: ${ys.length}`);
     const xsTensor = tf.stack(xs);
     const ysTensor = tf.stack(ys);
+
+    console.log('Building model');
 
     // Build model
     const inputShape = [1, this.tokenizedData.vocabulary.length];
     this.model = tf.sequential({
       layers: [
-        tf.layers.lstm({units: 16, inputShape, batchSize: 8}),
+        tf.layers.lstm({units: 16, inputShape, batchSize}),
         tf.layers.dense({
           units: this.tokenizedData.vocabulary.length,
-          batchSize: 8,
+          batchSize,
           activation: 'softmax',
         }),
       ],
     });
 
+    console.log('Compiling model');
     this.model.compile({loss: 'categoricalCrossentropy', optimizer: 'adamax'});
 
     // Train model
-    await this.model.fit(xsTensor, ysTensor, {epochs: 5});
+
+    console.log('Training model');
+    await this.model.fit(xsTensor, ysTensor, {
+      epochs,
+      callbacks: {
+        onBatchEnd: async (batch, logs) => {
+          console.log(`Batch ${batch} / ${batchSize}: loss = ${logs?.loss}`);
+        },
+        onEpochEnd: async (epoch, logs) => {
+          console.log(`Epoch ${epoch}/ ${epochs}: loss = ${logs?.loss}`);
+        },
+      },
+    });
   }
 
   predictRemainder(text: string): string {
