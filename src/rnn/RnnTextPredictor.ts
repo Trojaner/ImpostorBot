@@ -22,8 +22,8 @@ export default class RnnTextPredictor {
   constructor() {}
 
   async train(data: string[]) {
-    const maxMessages = 5000;
-    const maxVocubularySize = 1024;
+    const maxMessages = 2500;
+    const maxVocubularySize = 768;
     const batchSize = 8;
     const epochs = 5;
 
@@ -193,7 +193,12 @@ export default class RnnTextPredictor {
   private strToXs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return this.pad(str.split(' ')).map(word => {
+    console.log('strToXs');
+
+    const padded = this.pad(str.split(' '));
+    console.log('Mapping padded: ' + padded.length);
+
+    return padded.map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
 
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
@@ -207,7 +212,12 @@ export default class RnnTextPredictor {
   private strToYs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return this.pad(str.split(' ').slice(1)).map(word => {
+    console.log('strToYs');
+
+    const padded = this.pad(str.split(' ').slice(1));
+    console.log('Mapping padded: ' + padded.length);
+
+    return padded.map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
       const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
       if (!wordIndex) return y;
