@@ -12,7 +12,7 @@ export type TokenizedData = {
   vocabulary: string[];
   wordToIndex: {[word: string]: number};
   indexToWord: {[index: number]: string};
-  padSize: number;
+  maxWordCount: number;
 };
 
 export default class RnnTextPredictor {
@@ -22,16 +22,18 @@ export default class RnnTextPredictor {
   constructor() {}
 
   async train(data: string[]) {
-    const maxMessages = 2500;
+    const maxMessages = 512;
     const maxVocubularySize = 768;
+    const maxWordCount = 20;
     const batchSize = 8;
     const epochs = 5;
 
     // Preprocess data
     data = data
       .sort(() => Math.random() - 0.5)
-      .slice(0, maxMessages)
-      .map(msg => msg.replace(/\s{2,}/g, ' '));
+      .map(msg => msg.replace(/\s{2,}/g, ' '))
+      .filter(msg => msg.split(' ').length <= maxWordCount)
+      .slice(0, maxMessages);
 
     const wordCounts: {[word: string]: number} = {};
     data.forEach(str => {
@@ -57,13 +59,11 @@ export default class RnnTextPredictor {
       {}
     );
 
-    const padSize = Math.max(...data.map(str => str.split(' ').length));
-
     this.tokenizedData = {
       vocabulary,
       wordToIndex,
       indexToWord,
-      padSize,
+      maxWordCount,
     };
 
     console.log(
@@ -132,7 +132,7 @@ export default class RnnTextPredictor {
     xsTensor.dispose();
     y?.dispose();
 
-    return result.slice(text.length);
+    return result.slice(text.length).replace(/\0/g, '');
   }
 
   generateRandom(): string {
@@ -193,10 +193,7 @@ export default class RnnTextPredictor {
   private strToXs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    console.log('strToXs');
-
     const padded = this.pad(str.split(' '));
-    console.log('Mapping padded: ' + padded.length);
 
     return padded.map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
@@ -212,10 +209,7 @@ export default class RnnTextPredictor {
   private strToYs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    console.log('strToYs');
-
     const padded = this.pad(str.split(' ').slice(1));
-    console.log('Mapping padded: ' + padded.length);
 
     return padded.map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
@@ -230,7 +224,7 @@ export default class RnnTextPredictor {
   private pad(str: string[]): string[] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    const length = this.tokenizedData.padSize;
+    const length = this.tokenizedData.maxWordCount;
     console.log(
       'Padding string with length ' + str.length + ' to length: ' + length
     );
