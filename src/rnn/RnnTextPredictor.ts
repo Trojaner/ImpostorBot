@@ -229,10 +229,6 @@ export default class RnnTextPredictor {
       return str.slice(0, length);
     }
 
-    while (str.length < length) {
-      str.push('');
-    }
-
-    return str;
+    return [...str, ...Array(length - str.length).fill('\0')];
   }
 }
