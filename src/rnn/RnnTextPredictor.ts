@@ -28,7 +28,10 @@ export default class RnnTextPredictor {
     const epochs = 5;
 
     // Preprocess data
-    data = data.sort(() => Math.random() - 0.5).slice(0, maxMessages);
+    data = data
+      .sort(() => Math.random() - 0.5)
+      .slice(0, maxMessages)
+      .map(msg => msg.replace(/\s{2,}/g, ' '));
 
     const wordCounts: {[word: string]: number} = {};
     data.forEach(str => {
@@ -190,7 +193,7 @@ export default class RnnTextPredictor {
   private strToXs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return str.split(' ').map(word => {
+    return this.pad(str.split(' ')).map(word => {
       const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
 
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
@@ -204,16 +207,32 @@ export default class RnnTextPredictor {
   private strToYs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return str
-      .split(' ')
-      .slice(1)
-      .map(word => {
-        const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
-        const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
-        if (!wordIndex) return y;
+    return this.pad(str.split(' ').slice(1)).map(word => {
+      const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
+      const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
+      if (!wordIndex) return y;
 
-        y[wordIndex] = 1;
-        return y;
-      });
+      y[wordIndex] = 1;
+      return y;
+    });
+  }
+
+  private pad(str: string[]): string[] {
+    if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
+
+    const length = this.tokenizedData.padSize;
+    console.log(
+      'Padding string with length ' + str.length + ' to length: ' + length
+    );
+
+    if (str.length >= length) {
+      return str.slice(0, length);
+    }
+
+    while (str.length < length) {
+      str.push('');
+    }
+
+    return str;
   }
 }
