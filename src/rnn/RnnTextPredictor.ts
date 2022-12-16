@@ -160,7 +160,9 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return this.pad(str.split(' ')).map(word => {
-      const wordIndex = this.tokenizedData!.wordToIndex[word] || 0;
+      const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
+      if (!wordIndex) return [];
+
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
       x[wordIndex] = 1;
       return x;
@@ -171,7 +173,9 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return this.pad(str.split(' ').slice(1)).map(word => {
-      const wordIndex = this.tokenizedData!.wordToIndex[word] || 0;
+      const wordIndex = this.tokenizedData!.wordToIndex[word.trim()] || 0;
+      if (!wordIndex) return [];
+
       const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
       y[wordIndex] = 1;
       return y;
