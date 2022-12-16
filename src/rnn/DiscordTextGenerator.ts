@@ -219,10 +219,10 @@ async function predictText(
 
       await setTimeout(1000);
 
-      console.log(`Train started with ${messages.length} messages`);
+      console.log(`Training started with ${messages.length} messages`);
       await rnn.train(messages);
 
-      console.log('Train finished, saving model...');
+      console.log('Training finished, saving model...');
 
       const {modelTopology, weightSpecs, weightData, tokenizedData} =
         await rnn.export();

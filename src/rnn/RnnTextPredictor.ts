@@ -22,7 +22,7 @@ export default class RnnTextPredictor {
 
   async train(data: string[]) {
     // Preprocess data
-    const vocabulary = [...new Set(data)];
+    const vocabulary = [...new Set(data.join(' \n').split(' '))];
     const wordToIndex = vocabulary.reduce(
       (obj, word, i) => ({...obj, [word]: i}),
       {}
@@ -141,6 +141,10 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return this.pad(str.split(' ')).map(word => {
+      if (word.trim() == '') {
+        return [];
+      }
+
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
       x[this.tokenizedData!.wordToIndex[word]] = 1;
       return x;
@@ -151,6 +155,10 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return this.pad(str.split(' ').slice(1)).map(word => {
+      if (word.trim() == '') {
+        return [];
+      }
+
       const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
       y[this.tokenizedData!.wordToIndex[word]] = 1;
       return y;
