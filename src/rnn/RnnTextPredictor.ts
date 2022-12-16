@@ -72,12 +72,19 @@ export default class RnnTextPredictor {
 
     const xsTensor = tf.stack(xs);
     const ysTensor = tf.stack(ys);
+    ysTensor.reshape([-1, maxVocubularySize]);
 
     // Build model
     const inputShape = [maxWordCount, this.tokenizedData.vocabulary.length];
     this.model = tf.sequential({
       layers: [
-        tf.layers.lstm({units: 16, inputShape, batchSize}),
+        tf.layers.lstm({
+          units: 16,
+          inputShape,
+          batchSize,
+          returnSequences: true,
+        }),
+        tf.layers.lstm({units: 8, batchSize}),
         tf.layers.dense({
           units: this.tokenizedData.vocabulary.length,
           batchSize,
@@ -87,6 +94,7 @@ export default class RnnTextPredictor {
     });
 
     this.model.compile({loss: 'categoricalCrossentropy', optimizer: 'adamax'});
+    this.model.summary();
 
     // Train model
     await this.model.fit(xsTensor, ysTensor, {
@@ -100,6 +108,9 @@ export default class RnnTextPredictor {
         },
       },
     });
+
+    xsTensor.dispose();
+    ysTensor.dispose();
   }
 
   predictRemainder(text: string): string {
