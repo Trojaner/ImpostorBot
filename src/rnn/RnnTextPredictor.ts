@@ -74,7 +74,7 @@ export default class RnnTextPredictor {
     const ysTensor = tf.stack(ys);
 
     // Build model
-    const inputShape = [1, this.tokenizedData.vocabulary.length];
+    const inputShape = [maxWordCount, this.tokenizedData.vocabulary.length];
     this.model = tf.sequential({
       layers: [
         tf.layers.lstm({units: 16, inputShape, batchSize}),
