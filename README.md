@@ -58,3 +58,4 @@ The prompt parameter is optional and can include a few words that the generated 
 ## Credits:
 
 [ChatGPT](https://openai.com/blog/chatgpt/) for the RNN code.
+[GitHub Copilot](https://github.com/features/copilot) for being a helping hand.

@@ -170,8 +170,7 @@ export default class RnnTextPredictor {
   }
 
   private strToXs(str: string): number[][] {
-    if (!this.model?.built || !this.tokenizedData)
-      throw new Error('Model not trained yet.');
+    if (!this.tokenizedData) throw new Error('Tokenized data not available.');
 
     return str.split('').map(char => {
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
@@ -181,8 +180,7 @@ export default class RnnTextPredictor {
   }
 
   private strToYs(str: string): number[][] {
-    if (!this.model?.built || !this.tokenizedData)
-      throw new Error('Model not trained yet.');
+    if (!this.tokenizedData) throw new Error('Tokenized data not available.');
 
     return str
       .slice(1)
