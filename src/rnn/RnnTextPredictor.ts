@@ -21,8 +21,26 @@ export default class RnnTextPredictor {
   constructor() {}
 
   async train(data: string[]) {
+    const maxVocubularySize = 1024;
+
     // Preprocess data
-    const vocabulary = [...new Set(data.join(' \n').split(' '))];
+    data = data.sort(() => Math.random() - 0.5).slice(0, 5000);
+
+    const wordCounts: {[word: string]: number} = {};
+    data.forEach(str => {
+      str.split(' ').forEach(word => {
+        if (!wordCounts[word]) {
+          wordCounts[word] = 0;
+        }
+        wordCounts[word]++;
+      });
+    });
+
+    const sortedWords = Object.keys(wordCounts).sort(
+      (a, b) => wordCounts[b] - wordCounts[a]
+    );
+    const vocabulary = sortedWords.slice(0, maxVocubularySize);
+
     const wordToIndex = vocabulary.reduce(
       (obj, word, i) => ({...obj, [word]: i}),
       {}
@@ -48,9 +66,10 @@ export default class RnnTextPredictor {
     const inputShape = [1, this.tokenizedData.vocabulary.length];
     this.model = tf.sequential({
       layers: [
-        tf.layers.lstm({units: 64, inputShape}),
+        tf.layers.lstm({units: 16, inputShape, batchSize: 8}),
         tf.layers.dense({
           units: this.tokenizedData.vocabulary.length,
+          batchSize: 8,
           activation: 'softmax',
         }),
       ],
@@ -141,12 +160,9 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return this.pad(str.split(' ')).map(word => {
-      if (word.trim() == '') {
-        return [];
-      }
-
+      const wordIndex = this.tokenizedData!.wordToIndex[word] || 0;
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
-      x[this.tokenizedData!.wordToIndex[word]] = 1;
+      x[wordIndex] = 1;
       return x;
     });
   }
@@ -155,12 +171,9 @@ export default class RnnTextPredictor {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
     return this.pad(str.split(' ').slice(1)).map(word => {
-      if (word.trim() == '') {
-        return [];
-      }
-
+      const wordIndex = this.tokenizedData!.wordToIndex[word] || 0;
       const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
-      y[this.tokenizedData!.wordToIndex[word]] = 1;
+      y[wordIndex] = 1;
       return y;
     });
   }
