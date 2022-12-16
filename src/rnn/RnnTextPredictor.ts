@@ -140,7 +140,7 @@ export default class RnnTextPredictor {
   private strToXs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return str.split(' ').map(word => {
+    return this.pad(str.split(' ')).map(word => {
       const x = new Array(this.tokenizedData!.vocabulary.length).fill(0);
       x[this.tokenizedData!.wordToIndex[word]] = 1;
       return x;
@@ -150,13 +150,24 @@ export default class RnnTextPredictor {
   private strToYs(str: string): number[][] {
     if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
 
-    return str
-      .split(' ')
-      .slice(1)
-      .map(word => {
-        const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
-        y[this.tokenizedData!.wordToIndex[word]] = 1;
-        return y;
-      });
+    return this.pad(str.split(' ').slice(1)).map(word => {
+      const y = new Array(this.tokenizedData!.vocabulary.length).fill(0);
+      y[this.tokenizedData!.wordToIndex[word]] = 1;
+      return y;
+    });
+  }
+
+  private pad(str: string[]): string[] {
+    if (!this.tokenizedData) throw new Error('Tokenized data not set yet');
+
+    const length = Math.max(
+      ...this.tokenizedData?.vocabulary.map(s => s.split(' ').length)
+    );
+
+    while (str.length < length) {
+      str.push('');
+    }
+
+    return str;
   }
 }
