@@ -26,6 +26,7 @@ export default class RnnTextPredictor {
     const maxWordCount = 20;
     const batchSize = 8;
     const epochs = 5;
+    const maxVocabSize = 40;
 
     const text = messages
       .map(msg => msg.replace(/\s{2,}/g, ' '))
@@ -33,8 +34,10 @@ export default class RnnTextPredictor {
       .slice(0, maxMessages)
       .join(' \n');
 
-    this.buildVocabulary(text);
+    console.log('buildVocabulary');
+    this.buildVocabulary(text, maxVocabSize);
 
+    console.log('processData');
     const data = this.processData(text);
     const {inputSequences, targetSequences} = data;
 
@@ -42,14 +45,16 @@ export default class RnnTextPredictor {
     model.add(
       tf.layers.embedding({
         inputDim: this.tokenizedData!.vocabulary.size,
-        outputDim: 32,
+        outputDim: 16,
+        batchSize,
         inputLength: inputSequences[0].length,
       })
     );
     model.add(
       tf.layers.lstm({
-        units: 32,
+        units: 16,
         returnSequences: true,
+        batchSize,
         recurrentInitializer: 'glorotNormal',
       })
     );
@@ -57,17 +62,21 @@ export default class RnnTextPredictor {
       tf.layers.dense({
         units: this.tokenizedData!.vocabulary.size,
         activation: 'softmax',
+        batchSize,
       })
     );
 
+    console.log('model.compile');
     model.compile({
       optimizer: 'adamax',
       loss: 'categoricalCrossentropy',
     });
 
+    console.log('oneHotEncode');
     const oneHotInputs = this.oneHotEncode(inputSequences);
     const oneHotTargets = this.oneHotEncode(targetSequences);
 
+    console.log('tensor3d');
     const inputTensor = tf.tensor3d(oneHotInputs, [
       oneHotInputs.length,
       oneHotInputs[0].length,
@@ -79,6 +88,7 @@ export default class RnnTextPredictor {
       this.tokenizedData!.vocabulary.size,
     ]);
 
+    console.log('model.fit started');
     await model.fit(inputTensor, targetTensor, {
       epochs,
       callbacks: {
@@ -160,15 +170,29 @@ export default class RnnTextPredictor {
     return this.predictRemainder('', minLength, maxLength, temperature);
   }
 
-  private buildVocabulary(text: string) {
+  private buildVocabulary(text: string, maxVocabSize: number) {
     this.tokenizedData = {
       vocabulary: new Set<string>(),
       charToIndex: {},
       indexToChar: {},
     };
 
+    const charCounts: {[key: string]: number} = {};
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
+      if (charCounts[char]) {
+        charCounts[char]++;
+      } else {
+        charCounts[char] = 1;
+      }
+    }
+
+    const sortedCharCounts = Object.entries(charCounts).sort(
+      (a, b) => b[1] - a[1]
+    );
+
+    for (let i = 0; i < Math.max(sortedCharCounts.length, maxVocabSize); i++) {
+      const char = sortedCharCounts[i][0];
       this.tokenizedData.vocabulary.add(char);
       this.tokenizedData.charToIndex[char] = i;
       this.tokenizedData.indexToChar[i] = char;
