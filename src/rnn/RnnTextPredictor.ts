@@ -219,7 +219,7 @@ export default class RnnTextPredictor {
 
     const length = this.tokenizedData.padSize;
 
-    if (str.length > length) {
+    if (str.length >= length) {
       return str.slice(0, length);
     }
 
