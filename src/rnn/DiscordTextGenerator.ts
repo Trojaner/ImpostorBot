@@ -165,6 +165,7 @@ async function predictText(
       modelTopology: JSON.parse(dbModel.getDataValue<string>('model_topology')),
       weightSpecs: JSON.parse(dbModel.getDataValue<string>('weight_specs')),
       weightData: buffer,
+      tokenizedData: JSON.parse(dbModel.getDataValue<string>('tokenized_data')),
     };
   }
 
@@ -223,7 +224,8 @@ async function predictText(
 
       console.log('Train finished, saving model...');
 
-      const {modelTopology, weightSpecs, weightData} = await rnn.export();
+      const {modelTopology, weightSpecs, weightData, tokenizedData} =
+        await rnn.export();
 
       await DbModels.create({
         guild_id: guildId || channel.guild.id,
@@ -231,7 +233,7 @@ async function predictText(
         model_topology: JSON.stringify(modelTopology),
         weight_specs: JSON.stringify(weightSpecs),
         weight_data: weightData,
-        tokenized_data: 'null',
+        tokenized_data: tokenizedData,
         last_message_id: lastKnownMessageId,
       });
 

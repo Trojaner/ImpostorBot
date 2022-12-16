@@ -1,10 +1,8 @@
-Write a typescript class called RnnTextPredictor that does text prediction using a BiRNN with Tensorflow.js for Node.js and tf_node_tokenizer. 
+Write a typescript class called RnnTextPredictor that does text prediction using a RNN with Tensorflow.js for Node.js. 
 The text predictor will be trained with chat messages.
 
-First define a type called TextMessage as an alias to string.
-
-The RnnTextPredictor class should have the following functions:
-- train: trains the model using data from a TextMessage array. It should train as fast as possible.
+The RnnTextPredictor class should have at least the following functions:
+- train: trains the model using data from a string array. It should train as fast as possible.
 - predictRemainder: predicts the remainder of a given input message text
 - predictRelated: predicts a related message to a given input message text
 - generateRandom: generates a random text from the trained data as string array.
@@ -13,5 +11,6 @@ The RnnTextPredictor class should have the following functions:
 
 Only print code using markdown codeblocks. 
 Include imports in the printed code. 
+Do not make up any functions or packages.
 Do not explain anything outside the code.
 Do not create stub functions with only comments or nothing inside them.
